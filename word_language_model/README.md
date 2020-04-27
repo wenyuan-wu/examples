@@ -59,3 +59,18 @@ python main.py --cuda --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied
 python main.py --cuda --emsize 1500 --nhid 1500 --dropout 0.65 --epochs 40        
 python main.py --cuda --emsize 1500 --nhid 1500 --dropout 0.65 --epochs 40 --tied 
 ```
+
+`generate.py` script requires the following argument:
+
+```bash
+--strategy                       the method that is chosen
+```
+This allows to implement **greedy search** as an option.
+
+# Model
+
+For this task, we used `model.500.pt` because it returns the best results.
+
+# Useful documentation
+
+https://pytorch.org/docs/stable/torch.html 
