@@ -30,6 +30,8 @@ parser.add_argument('--temperature', type=float, default=1.0,
                     help='temperature - higher will increase diversity')
 parser.add_argument('--log-interval', type=int, default=100,
                     help='reporting interval')
+parser.add_argument('--strategy', choices=['sampling', 'greedy'], type=str,
+                    help='select whether sampling or greedy search is used', required=True)
 args = parser.parse_args()
 
 # Set the random seed manually for reproducibility.
@@ -55,24 +57,47 @@ if not is_transformer_model:
     hidden = model.init_hidden(1)
 input = torch.randint(ntokens, (1, 1), dtype=torch.long).to(device)
 
-with open(args.outf, 'w') as outf:
-    with torch.no_grad():  # no tracking history
+#sampling method
+if args.strategy == 'sampling':
+    print('sampling: ')
+    
+  with open(args.outf, 'w') as outf:
+      with torch.no_grad():  # no tracking history
+          for i in range(args.words):
+              if is_transformer_model:
+                  output = model(input, False)
+                  word_weights = output[-1].squeeze().div(args.temperature).exp().cpu()
+                  word_idx = torch.multinomial(word_weights, 1)[0]
+                  word_tensor = torch.Tensor([[word_idx]]).long().to(device)
+                  input = torch.cat([input, word_tensor], 0)
+              else:
+                  output, hidden = model(input, hidden)
+                  word_weights = output.squeeze().div(args.temperature).exp().cpu()
+                  word_idx = torch.multinomial(word_weights, 1)[0]
+                  input.fill_(word_idx)
+
+              word = corpus.dictionary.idx2word[word_idx]
+
+              outf.write(word + ('\n' if i % 20 == 19 else ' '))
+
+              if i % args.log_interval == 0:
+                  print('| Generated {}/{} words'.format(i, args.words))
+                  
+#greedy search method
+if args.strategy == 'greedy':
+    print('greedy search: ')
+
+    with open(args.outf, 'w') as outf:
+        a = torch.ones(1,1).fill_(1) 
+        #torch.ones: returns a tensor filled with the scalar value 1 with the same size as input
         for i in range(args.words):
-            if is_transformer_model:
-                output = model(input, False)
-                word_weights = output[-1].squeeze().div(args.temperature).exp().cpu()
-                word_idx = torch.multinomial(word_weights, 1)[0]
-                word_tensor = torch.Tensor([[word_idx]]).long().to(device)
-                input = torch.cat([input, word_tensor], 0)
-            else:
-                output, hidden = model(input, hidden)
-                word_weights = output.squeeze().div(args.temperature).exp().cpu()
-                word_idx = torch.multinomial(word_weights, 1)[0]
-                input.fill_(word_idx)
+            output = model(input, variable.size(1))
+            prob = model.generator(output[:, -1])
+            _, next_word = torch.max(prob, dim = 1)
+            #torch.max: returns the maximum value of all elements in the input tensor
+            next_word = next_word.args.data[0]
 
-            word = corpus.dictionary.idx2word[word_idx]
+            a = torch.cat([a, torch.ones(1,1).fill_(next_word)], dim=1)
 
-            outf.write(word + ('\n' if i % 20 == 19 else ' '))
-
-            if i % args.log_interval == 0:
-                print('| Generated {}/{} words'.format(i, args.words))
+            outf.write(word + ('\n'))
+            print('| Generated {}/{} words'.format(i, args, words))
