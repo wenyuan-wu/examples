@@ -91,7 +91,7 @@ if args.strategy == 'greedy':
         a = torch.ones(1,1).fill_(1) 
         #torch.ones: returns a tensor filled with the scalar value 1 with the same size as input
         for i in range(args.words):
-            output = model(input, variable.size(1))
+            output = model(input, a.size(1))
             prob = model.generator(output[:, -1])
             _, next_word = torch.max(prob, dim = 1)
             #torch.max: returns the maximum value of all elements in the input tensor
