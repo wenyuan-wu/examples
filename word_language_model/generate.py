@@ -100,4 +100,4 @@ if args.strategy == 'greedy':
             a = torch.cat([a, torch.ones(1,1).fill_(next_word)], dim=1)
 
             outf.write(word + ('\n'))
-            print('| Generated {}/{} words'.format(i, args, words))
+            print('| Generated {}/{} words'.format(i, args.words))
